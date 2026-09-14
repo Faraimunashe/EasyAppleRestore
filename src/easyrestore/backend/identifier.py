@@ -9,17 +9,31 @@ from pathlib import Path
 from easyrestore.backend.paths import cache_root
 
 
+def _looks_like_prefix(path: Path) -> bool:
+    return (path / "bin").is_dir() or (path / "sbin").is_dir()
+
+
 @lru_cache(maxsize=1)
 def vendor_prefix() -> Path | None:
     """Resolve the vendored libimobiledevice install prefix, if present."""
     env = os.environ.get("EASYRESTORE_VENDOR_PREFIX")
     if env:
         path = Path(env)
-        if (path / "bin").is_dir() or (path / "sbin").is_dir():
+        if _looks_like_prefix(path):
             return path
+    # AppImage / portable layout: …/usr/lib/easyrestore/{venv,vendor}
+    # When running from the embedded venv, sys.prefix is …/easyrestore/venv.
+    try:
+        import sys
+
+        portable = Path(sys.prefix).resolve().parent / "vendor"
+        if _looks_like_prefix(portable):
+            return portable
+    except Exception:
+        pass
     # src/easyrestore/backend/identifier.py -> repo root is parents[3]
     repo_prefix = Path(__file__).resolve().parents[3] / "vendor" / "prefix"
-    if (repo_prefix / "bin").is_dir() or (repo_prefix / "sbin").is_dir():
+    if _looks_like_prefix(repo_prefix):
         return repo_prefix
     return None
 

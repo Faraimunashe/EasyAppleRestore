@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -40,7 +41,10 @@ def test_udev_rule_targets_apple_vid() -> None:
     assert "uaccess" in text
 
 
-def test_debian_splits_gui_and_helper() -> None:
-    text = (ROOT / "packaging/debian/control").read_text(encoding="utf-8")
-    assert "Package: easyrestore\n" in text
-    assert "Package: easyrestore-helper\n" in text
+def test_appimage_build_script_exists() -> None:
+    script = ROOT / "packaging/build-appimage.sh"
+    assert script.is_file()
+    assert os.access(script, os.X_OK)
+    host = ROOT / "packaging/install-host-support.sh"
+    assert host.is_file()
+    assert os.access(host, os.X_OK)

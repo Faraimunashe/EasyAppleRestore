@@ -9,10 +9,23 @@ Working today:
 - Vendored libimobiledevice pin file and build script
 - Helper D-Bus methods with PolicyKit on the system bus
 - Full wizard (theme-aware UI, IPSW lookup/download/verify, preflight, restore, diagnostics)
-- Packaging drafts: Flatpak, Snap (`raw-usb`), `.deb` skeleton, AppImage notes, udev rules
+- Packaging: AppImage build script (+ host udev installer); Flatpak/Snap/`.deb` drafts
 - Unit tests (`EASYRESTORE_RESTORE_STUB=1` simulates idevicerestore)
 
-Still ahead: publishable store builds, vendored stack inside packages, and per-model DFU verification.
+Still ahead: store listings (Flathub/Snap), polished `.deb` uploads, and per-model DFU verification.
+
+## Tester AppImage
+
+```bash
+./vendor/build.sh                 # once
+./packaging/build-appimage.sh     # writes dist/EasyRestore-*-x86_64.AppImage
+chmod +x dist/EasyRestore-*.AppImage
+./dist/EasyRestore-*.AppImage
+# Real USB device (once per machine):
+sudo ./packaging/install-host-support.sh
+```
+
+See [packaging/APPIMAGE.md](packaging/APPIMAGE.md).
 
 ## Run the wizard
 

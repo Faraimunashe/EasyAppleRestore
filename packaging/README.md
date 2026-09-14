@@ -6,10 +6,11 @@ authorized by PolicyKit (see the project brief).
 
 | Channel | Path | Status |
 |---|---|---|
+| AppImage | `packaging/build-appimage.sh` | **Builds** → `dist/EasyRestore-*-x86_64.AppImage` |
+| Host USB | `packaging/install-host-support.sh` | udev (+ optional helper) |
 | `.deb` | `packaging/debian/` | Skeleton (GUI + helper packages) |
 | Flatpak | `packaging/flatpak/io.easyrestore.EasyRestore.yml` | Manifest draft |
 | Snap | `packaging/snap/snapcraft.yaml` | Manifest draft (`raw-usb`) |
-| AppImage | `packaging/APPIMAGE.md` | Build notes |
 
 ## Permission model
 
