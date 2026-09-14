@@ -1,3 +1,9 @@
+easyrestore (0.1.1-1) UNRELEASED; urgency=medium
+
+  * Tester AppImage packaging and host USB support scripts.
+
+ -- EasyRestore <easyrestore@localhost>  Mon, 14 Sep 2026 15:10:00 +0200
+
 easyrestore (0.1.0-1) UNRELEASED; urgency=medium
 
   * Initial packaging skeleton for EasyRestore GUI and helper.

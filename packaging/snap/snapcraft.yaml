@@ -1,6 +1,6 @@
 name: easyrestore
 base: core24
-version: "0.1.0"
+version: "0.1.1"
 summary: Guided iPhone and iPad restore for Linux
 description: |
   EasyRestore restores, updates, or erases an iPhone or iPad from an IPSW

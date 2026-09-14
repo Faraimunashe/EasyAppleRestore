@@ -33,6 +33,11 @@
   </recommends>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.1.1" date="2026-09-14">
+      <description>
+        <p>Tester AppImage release with bundled libimobiledevice stack and host USB setup notes.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-09-12">
       <description>
         <p>Initial development preview: wizard shell, IPSW verify, helper restore path.</p>
