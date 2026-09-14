@@ -1,0 +1,72 @@
+# Project Brief: "EasyRestore" — GUI-based iOS Device Restore Tool for Linux
+
+## Vision
+Build a Linux desktop application that lets any non-technical user restore/downgrade/erase an iPhone or iPad using an IPSW file, without ever touching a terminal. It wraps the libimobiledevice/idevicerestore ecosystem, but hides every piece of complexity that currently makes this process painful: device mode detection, USB stack quirks, dependency version mismatches, corrupted downloads, and cryptic log output.
+
+The target user is someone who today would have to follow a multi-hour forum thread of trial and error (build from source, chase dependency versions, decode raw idevicerestore log lines, diagnose USB errors) just to restore their phone. This app should take them from "I have an IPSW file and a USB cable" to "my phone is restored" in a guided, visual, no-terminal flow.
+
+Long-term goal: publish to Ubuntu App Center, Flathub, and as a standalone AppImage/.deb; pursue adoption/licensing conversation with ipsw.me (https://ipsw.me), which already provides IPSW download links and device-signing-status data that this app could integrate with directly.
+
+## Tech Stack (decided)
+
+- **Language:** Python 3.11+
+- **GUI framework:** PySide6 (Qt for Python) — chosen over GTK for consistent rendering across GNOME, KDE, and other desktop environments, mature packaging story, and LGPL licensing compatible with commercial distribution.
+- **Device/restore backend:** A bundled, pinned, pre-patched build of the libimobiledevice ecosystem:
+  - libplist, libimobiledevice-glue, libusbmuxd, usbmuxd, libtatsu, libirecovery, libimobiledevice, idevicerestore
+  - Ship exact known-good commit hashes (pin them in a manifest file, e.g. `vendor/versions.lock`), not "latest master" — today's entire debugging saga was caused by ambiguous/mismatched versions.
+  - Apply the upstream ASR timeout fix (`asr: Increase timeouts for slow devices`, commit `405fcd1` on the canonical libimobiledevice git server) if not already merged in the pinned commit.
+  - Do NOT rely on any system-installed copy of these libraries. Vendor and statically/dynamically link a private copy inside the app's install prefix so there is zero interaction with the host's package manager or existing libimobiledevice installs.
+- **Privileged operations:** A small **root-helper daemon** exposed over D-Bus, authorized via **PolicyKit (polkit)**. The main GUI process runs unprivileged; when it needs to run `idevicerestore`, manage `usbmuxd`, or touch raw USB devices, it calls the helper, which triggers a native OS password/authentication dialog (never a terminal prompt). This avoids Flatpak/Snap raw-USB sandboxing friction, since only the narrow helper needs the broad device permission.
+- **Packaging targets, all first-class from day one:**
+  - **Flatpak** (Flathub) — use the `--device=all` permission or a custom udev-based portal; document clearly in the manifest.
+  - **Snap** (Ubuntu App Center) — use the `raw-usb` interface; pursue Canonical's auto-connect/classic confinement review so end users never need a manual `snap connect` step.
+  - **AppImage** — the "just works" fallback with the fewest sandboxing constraints; recommend this as the primary download from the app's own website while store listings are in review.
+  - **.deb** — for direct Ubuntu/Debian installation outside the App Center.
+- **Licensing compliance:** libimobiledevice components are LGPL. If distributing as a commercial/paid product, dynamically link (do not statically link) these components, and provide either the exact source or a written offer for it, per LGPL §6. Get this reviewed before charging money for the app.
+
+## Core User Journey (wizard-style, one step visible at a time)
+
+1. **Welcome & device connect** — "Plug in your iPhone/iPad with a USB cable." Auto-detect device via USB VID/PID polling (no button-press required yet for detection).
+2. **Choose action** — Restore/Update, Downgrade, Erase & Restore, or "I don't know, help me pick" (a plain-language explainer for each).
+3. **Select firmware (IPSW):**
+   - Auto-detect connected device model (e.g., `iPhone13,4`) and query the **ipsw.me API** for available firmware versions and current *signing status* for that exact device.
+   - Let the user pick a version, or auto-select "latest signed."
+   - Download with a visible progress bar, **resumable on interruption**, and **mandatory post-download integrity verification** (zip/CRC test equivalent to `unzip -t`, plus SHA1 check against the ipsw.me manifest) *before* allowing the user to proceed. This directly addresses the single most time-consuming failure mode from today's real debugging session — a silently corrupted/truncated IPSW download.
+   - Alternative: let the user point to an already-downloaded IPSW file on disk, and still run the same integrity check on it before proceeding.
+4. **Guided device-mode entry:**
+   - Detect current device mode (Normal / Recovery / DFU / Restore) via the bundled libirecovery layer.
+   - If the device needs to be in Recovery or DFU mode, show an animated, model-specific button-press sequence (Face ID devices vs Touch ID devices vs older devices need different combos) with a live "we detected: [current mode]" indicator so the user knows the moment they've succeeded, rather than guessing.
+5. **Pre-flight checks (silent, automatic, but logged):**
+   - Confirm `usbmuxd` (bundled) is running; start it if not.
+   - Confirm no conflicting host process (e.g., `gvfs-afc-volume-monitor`) is holding the device; offer to temporarily pause it with user consent.
+   - Confirm sufficient free disk space for extraction/personalization.
+6. **Restore in progress:**
+   - Run the bundled `idevicerestore` via the root-helper, streaming its raw log internally.
+   - **Translate raw log lines into a friendly step list and overall percentage**, e.g. map `"Sending SystemVolume"` / `"Verifying restore (14)"` / `"Creating system key bag (50)"` etc. to a small fixed set of human-readable phases: "Preparing firmware" → "Copying system files" → "Verifying" → "Finalizing" → "Done". Keep the raw log available behind an "Advanced / View technical log" toggle for power users and for support/bug-report purposes.
+   - Detect and clearly explain known failure signatures we identified today, rather than showing raw errors:
+     - `Unable to discover device type` → "We can't identify your device over USB. Try a different cable or port."
+     - `Unable to send data to ASR` repeated at a fixed timestamp interval → "The connection to your device was interrupted during the file transfer. This is often a USB cable/port issue — try a different port, ideally USB-A, with no hub."
+     - `Could not read data (-256)` immediately followed by device power-off → "Your device is restarting to finish the restore — if the battery is very low, plug into a wall charger and wait a few minutes."
+     - CRC/zip integrity failure on the IPSW → "The firmware file appears corrupted. Please re-download it." (auto-offer a re-download button)
+7. **Completion screen** — clear success/failure state, with a "View technical log" and "Copy diagnostic report" button (bundles OS info, device info, and the last N log lines) for support requests.
+
+## Non-Functional Requirements
+
+- **Zero terminal commands** required at any point in the primary flow, including privilege escalation (must use polkit's native dialog, not `pkexec` invoked visibly, not `sudo` instructions).
+- **Offline-tolerant:** if the user already has a verified IPSW, the whole restore flow should work without hitting ipsw.me at all.
+- **Internationalization-ready** UI strings (even if only English ships in v1).
+- **Accessibility:** keyboard navigable wizard, screen-reader-friendly labels on all controls.
+- **Crash-safe:** if the GUI process crashes mid-restore, the root-helper daemon should continue the operation independently and the GUI should be able to reattach to it on relaunch (restores can take 10+ minutes; losing progress because a window closed would be a serious UX failure).
+
+## Explicitly Out of Scope for v1
+- Jailbreak-adjacent tooling of any kind.
+- SHSH blob saving/generation, custom firmware, or any signature-bypass functionality.
+- Windows/macOS builds (Linux-only for v1; architecture should not preclude a future port).
+
+## Business/Distribution Notes
+- Prepare a clean separation between the open-source core (the wrapped libimobiledevice stack + basic restore flow, which should probably be open-sourced given LGPL obligations and to build trust/credibility for a security-adjacent tool) and any paid layer (e.g., a "Pro" tier with batch restores, an in-app device-inventory/fleet view for repair shops, or a support-contract offering) — this maps directly onto a possible pitch to ipsw.me as either a white-labeled companion app or a sponsored open-source integration.
+- Confirm ipsw.me's API terms of use/rate limits before building the integration (their public API status/availability should be checked directly rather than assumed).
+
+---
+
+**Instruction to the coding assistant building this:** Implement this as an incremental, testable Python project. Start with: (1) the vendored/pinned libimobiledevice build script and version manifest, (2) the root-helper daemon skeleton with a single "get device mode" D-Bus method as a proof of concept, (3) the PySide6 wizard shell with placeholder screens for each step above, before wiring in real restore logic. Surface any ambiguity in this brief as a question rather than guessing silently, especially around device-mode button-press sequences (they differ across hardware generations) and the exact ipsw.me API contract.

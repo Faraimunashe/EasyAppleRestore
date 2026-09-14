@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=EasyRestore
+GenericName=iOS Restore
+Comment=Restore an iPhone or iPad from an IPSW file
+Exec=easyrestore
+Icon=io.easyrestore.EasyRestore
+Terminal=false
+Categories=Utility;System;
+Keywords=iPhone;iPad;IPSW;restore;idevicerestore;
+StartupNotify=true
+StartupWMClass=easyrestore
+X-GNOME-UsesNotifications=false

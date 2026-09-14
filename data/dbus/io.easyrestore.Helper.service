@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=io.easyrestore.Helper
+Exec=/usr/bin/easyrestore-helper
+User=root
+SystemdService=easyrestore-helper.service

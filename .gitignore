@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.log
+
+# Vendored build outputs (sources are cloned on demand)
+vendor/src/
+vendor/prefix/
+vendor/build/
+vendor/env.sh
+vendor/build.log

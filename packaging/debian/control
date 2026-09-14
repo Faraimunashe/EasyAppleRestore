@@ -1,0 +1,46 @@
+Source: easyrestore
+Section: utils
+Priority: optional
+Maintainer: EasyRestore <easyrestore@localhost>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-python,
+ python3-all,
+ python3-setuptools,
+ pybuild-plugin-pyproject,
+Standards-Version: 4.7.0
+Homepage: https://ipsw.me
+Rules-Requires-Root: no
+
+Package: easyrestore
+Architecture: all
+Depends:
+ ${misc:Depends},
+ ${python3:Depends},
+ python3-pyside6.qtwidgets | python3-pyside6.qtcore,
+ python3-dbus,
+ polkitd,
+ dbus,
+Recommends:
+ easyrestore-helper,
+ libusb-1.0-0,
+Description: Guided iPhone and iPad restore for Linux
+ EasyRestore is a desktop wizard that restores an iPhone or iPad from an
+ IPSW file without using a terminal. This package installs the GUI.
+ .
+ Privileged USB restore operations are provided by easyrestore-helper.
+
+Package: easyrestore-helper
+Architecture: all
+Depends:
+ ${misc:Depends},
+ ${python3:Depends},
+ python3-dbus,
+ polkitd,
+ dbus,
+ systemd,
+Recommends:
+ libusb-1.0-0,
+Description: Privileged helper for EasyRestore
+ D-Bus activated helper that runs preflight checks and idevicerestore under
+ PolicyKit authorization. The GUI talks to this helper over the system bus.

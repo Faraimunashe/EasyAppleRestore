@@ -1,0 +1,70 @@
+name: easyrestore
+base: core24
+version: "0.1.0"
+summary: Guided iPhone and iPad restore for Linux
+description: |
+  EasyRestore restores, updates, or erases an iPhone or iPad from an IPSW
+  file without using a terminal. The preferred architecture talks to a
+  system PolicyKit helper for USB/idevicerestore. This snap also requests
+  raw-usb so a confined fallback remains possible while Canonical reviews
+  auto-connect.
+
+grade: devel
+confinement: strict
+license: LGPL-2.1-or-later
+
+architectures:
+  - build-on: amd64
+
+apps:
+  easyrestore:
+    command: bin/easyrestore
+    desktop: share/applications/io.easyrestore.EasyRestore.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - network-bind
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+      - raw-usb
+      - hardware-observe
+      # Prefer talking to a host-installed helper when present.
+      - system-observe
+    common-id: io.easyrestore.EasyRestore
+    environment:
+      # Development / snap users can still force the in-snap path.
+      EASYRESTORE_HELPER_BUS: system
+
+parts:
+  easyrestore:
+    plugin: python
+    source: ../..
+    python-packages:
+      - PySide6
+      - dbus-next
+    stage-packages:
+      - libusb-1.0-0
+      - libssl3t64
+      - zlib1g
+    override-build: |
+      craftctl default
+      install -Dm644 "$CRAFT_PART_SRC/data/desktop/io.easyrestore.EasyRestore.desktop" \
+        "$CRAFT_PART_INSTALL/share/applications/io.easyrestore.EasyRestore.desktop"
+      install -Dm644 "$CRAFT_PART_SRC/data/metainfo/io.easyrestore.EasyRestore.metainfo.xml" \
+        "$CRAFT_PART_INSTALL/share/metainfo/io.easyrestore.EasyRestore.metainfo.xml"
+    organize:
+      lib/python*/site-packages: lib/python3/dist-packages
+
+plugs:
+  # Explicit plug metadata helps the store review for auto-connect.
+  raw-usb:
+    interface: raw-usb
+
+# After install, until auto-connect is granted:
+#   sudo snap connect easyrestore:raw-usb
+# Host udev rules from the .deb (data/udev/39-easyrestore.rules) are still
+# recommended so device nodes are usable without running as root.

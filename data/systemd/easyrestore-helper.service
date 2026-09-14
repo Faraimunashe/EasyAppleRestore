@@ -1,0 +1,12 @@
+[Unit]
+Description=EasyRestore privileged helper
+Documentation=man:easyrestore-helper(1)
+
+[Service]
+Type=dbus
+BusName=io.easyrestore.Helper
+ExecStart=/usr/bin/easyrestore-helper
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

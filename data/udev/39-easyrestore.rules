@@ -1,0 +1,5 @@
+# Apple USB VID 05ac — grant plugdev access for recovery/DFU/normal modes.
+# Install to /usr/lib/udev/rules.d/ or /etc/udev/rules.d/
+# Then: udevadm control --reload-rules && udevadm trigger
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="05ac", MODE="0660", GROUP="plugdev", TAG+="uaccess"

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.easyrestore.EasyRestore</id>
+  <name>EasyRestore</name>
+  <summary>Restore an iPhone or iPad from an IPSW on Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LGPL-2.1-or-later</project_license>
+  <developer_name>EasyRestore</developer_name>
+  <description>
+    <p>
+      EasyRestore guides you through restoring, updating, or erasing an iPhone
+      or iPad using an IPSW firmware file — without using a terminal.
+    </p>
+    <p>
+      It vendors a pinned libimobiledevice stack, verifies firmware integrity
+      before restore, and uses PolicyKit for privileged USB operations.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.easyrestore.EasyRestore.desktop</launchable>
+  <url type="homepage">https://ipsw.me</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Guided restore wizard</caption>
+    </screenshot>
+  </screenshots>
+  <provides>
+    <binary>easyrestore</binary>
+    <binary>easyrestore-helper</binary>
+  </provides>
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </recommends>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-09-12">
+      <description>
+        <p>Initial development preview: wizard shell, IPSW verify, helper restore path.</p>
+      </description>
+    </release>
+  </releases>
+</component>

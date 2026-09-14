@@ -1,0 +1,79 @@
+# Flatpak manifest for EasyRestore (GUI).
+#
+# Architecture (matches the project brief):
+#   - This Flatpak ships the unprivileged PySide6 wizard only.
+#   - Privileged USB / idevicerestore work is done by the system D-Bus helper
+#     from the .deb (or a future Flatpak extension). That avoids needing
+#     --device=all inside the sandbox for the restore itself.
+#   - --device=all is still declared so local/sysfs detection and future
+#     in-sandbox fallbacks can see Apple USB devices during development.
+#
+# Build (once published dependencies are finalized):
+#   flatpak-builder --user --install --force-clean build-dir \
+#     packaging/flatpak/io.easyrestore.EasyRestore.yml
+#
+# Prerequisite on the host: easyrestore-helper installed and enabled
+# (see packaging/debian or packaging/install-data.sh).
+
+app-id: io.easyrestore.EasyRestore
+runtime: org.freedesktop.Platform
+runtime-version: "24.08"
+sdk: org.freedesktop.Sdk
+command: easyrestore
+finish-args:
+  # Display
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  # Network for ipsw.me firmware lookup / download
+  - --share=network
+  # Theme / portals
+  - --filesystem=xdg-download:ro
+  - --filesystem=xdg-documents:ro
+  - --talk-name=org.freedesktop.Flatpak
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.freedesktop.secrets
+  # System helper (privileged restore)
+  - --system-talk-name=io.easyrestore.Helper
+  - --talk-name=org.freedesktop.PolicyKit1
+  # USB visibility for detection / optional local helper fallback
+  # Documented explicitly per project brief (--device=all).
+  - --device=all
+
+modules:
+  - name: python3-pip-deps
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --prefix=${FLATPAK_DEST} PySide6 dbus-next
+    sources:
+      - type: file
+        path: ../../pyproject.toml
+
+  - name: easyrestore
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --prefix=${FLATPAK_DEST} .
+      - install -Dm644 data/desktop/io.easyrestore.EasyRestore.desktop
+          ${FLATPAK_DEST}/share/applications/io.easyrestore.EasyRestore.desktop
+      - install -Dm644 data/metainfo/io.easyrestore.EasyRestore.metainfo.xml
+          ${FLATPAK_DEST}/share/metainfo/io.easyrestore.EasyRestore.metainfo.xml
+      - install -Dm644 data/icons/io.easyrestore.EasyRestore.svg
+          ${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/io.easyrestore.EasyRestore.svg
+      - |
+          for size in 16 24 32 48 64 128 256 512; do
+            install -Dm644 "data/icons/hicolor/${size}x${size}/apps/io.easyrestore.EasyRestore.png" \
+              "${FLATPAK_DEST}/share/icons/hicolor/${size}x${size}/apps/io.easyrestore.EasyRestore.png"
+          done
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .venv
+          - vendor/src
+          - vendor/prefix
+          - vendor/build
+          - .git
+          - build-dir
+          - dist
+          - "**/.pytest_cache"
+          - "**/__pycache__"

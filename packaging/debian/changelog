@@ -1,0 +1,5 @@
+easyrestore (0.1.0-1) UNRELEASED; urgency=medium
+
+  * Initial packaging skeleton for EasyRestore GUI and helper.
+
+ -- EasyRestore <easyrestore@localhost>  Fri, 12 Sep 2026 22:00:00 +0200
